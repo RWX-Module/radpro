@@ -1,0 +1,40 @@
+name: Build GC-03
+
+on:
+  workflow_dispatch:
+    inputs:
+      languages:
+        description: "Языки через пробел"
+        default: "en ru uk"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup base
+        uses: ./.github/actions/setup
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-pio-gc03
+
+      - name: Build
+        run: |
+          cd platform.io
+          ENVS=""
+          for l in ${{ inputs.languages }}; do ENVS="$ENVS -e fnirsi-gc03-$l"; done
+          pio run $ENVS
+
+      - name: Sign firmware
+        run: |
+          mkdir firmware
+          cd firmware
+          python ../tools/sign.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: radpro-gc03-nochess
+          path: firmware/fnirsi-gc03/firmware/*.bin
